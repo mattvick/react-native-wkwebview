@@ -290,12 +290,22 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
 - (void)webView:(__unused WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
+  UIApplication *app = [UIApplication sharedApplication];
   NSURLRequest *request = navigationAction.request;
   NSURL* url = request.URL;
   NSString* scheme = url.scheme;
   
   BOOL isJSNavigation = [scheme isEqualToString:RCTJSNavigationScheme];
   
+  // handle trustwise scheme
+  if ([scheme isEqualToString:@"trustwise"]) {
+    if ([app canOpenURL:url]) {
+      bool didOpen = [app openURL:url];
+      decisionHandler(WKNavigationActionPolicyAllow);
+      return;
+    }
+  }
+
   // skip this for the JS Navigation handler
   if (!isJSNavigation && _onShouldStartLoadWithRequest) {
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
